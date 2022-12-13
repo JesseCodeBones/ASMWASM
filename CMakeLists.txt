@@ -3,7 +3,7 @@ project(asm-wasm VERSION 0.1.0)
 file(GLOB sources CONFIGURE_DEPENDS src/*.cpp src/*.hpp)
 include(CTest)
 enable_testing()
-
+set(CMAKE_CXX_STANDARD 17)
 add_executable(asm-wasm main.cpp)
 target_sources(asm-wasm PUBLIC ${sources})
 add_subdirectory(test)
