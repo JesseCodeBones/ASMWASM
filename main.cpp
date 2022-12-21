@@ -1,5 +1,43 @@
-#include <iostream>
 #include <binaryen-c.h>
-int main(int, char**) {
-    std::cout << "Hello, world!\n";
+#include <cstring>
+#include <iostream>
+#include "src/CDCInstru.hpp"
+#include "src/CDCInstruDelegator.hpp"
+
+
+int main(int argc, char **argv) {
+  struct InstrumentationConfig instruConfig;
+  if (argc != 9) {
+    // print help documentation
+    std::cout << "asm-wasm is a tool that instrument wasm binary with Adress "
+                 "sanatizer function:\n";
+    std::cout << "-----------------------------\n";
+    std::cout << "-f    inputfile\n";
+    std::cout << "-r    runtime file prefix\n";
+    std::cout << "-o    output file\n";
+    std::cout << "-s    sanitizer function name\n";
+    std::cout << "-----------------------------\n";
+    std::cout << "example: asm-wasm -f input.wasm -r \"../node_module/asc\" -o "
+                 "out.wasm -s \"$node_modules/asc-linear-rt/lm/chkMemAvai\"\n" ;
+    return 0;
+  }
+
+  for (int i = 1; i < argc; i = i + 2) {
+    if (strcmp(argv[i], "-f") == 0) {
+      instruConfig.fileName = argv[i + 1];
+    }
+    if (strcmp(argv[i], "-r") == 0) {
+      instruConfig.runtimeName = argv[i + 1];
+    }
+    if (strcmp(argv[i], "-o") == 0) {
+      instruConfig.targetName = argv[i + 1];
+    }
+    if (strcmp(argv[i], "-s") == 0) {
+      instruConfig.sanitizerName = argv[i + 1];
+    }
+  }
+  std::cout << "Got your arguments: " << instruConfig << std::endl;
+  char name[] = {ADDRESS_SANATIZER_INSTRUMENTER};
+  CDCInstruDelegator delegator(name, &instruConfig);
+  delegator.instrument();
 }

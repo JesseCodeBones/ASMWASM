@@ -1,4 +1,7 @@
 #include "literal.h"
+#include "pass.h"
+#include "wasm-stack.h"
+#include "wasm-traversal.h"
 #include "wasm-type.h"
 #include "wasm.h"
 #include <binaryen-c.h>
@@ -9,21 +12,34 @@
 #include <iostream>
 #include <ir/iteration.h>
 #include <memory>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
 
-void visit(wasm::Expression *expression) {
-  std::cout << "jesse visit -- " << expression->_id << std::endl;
-  if (expression->_id == wasm::Expression::Id::StoreId) {
-    std::cout << "found store ids\n";
-  }
+struct CDCInstrumenter
+    : public wasm::WalkerPass<wasm::PostWalker<CDCInstrumenter>> {
+  void visitStore(wasm::Store *curr) {
+    wasm::Builder builder(*getModule());
+    auto memory = getModule()->getMemory(curr->memory);
 
-  for (auto child : wasm::ChildIterator(expression)) {
-    visit(child);
+    // generate replaced expression
+    BinaryenExpressionRef args[] = {
+        curr->ptr,
+        BinaryenConst(getModule(), BinaryenLiteralInt32(
+                                       static_cast<uint32_t>(curr->bytes)))};
+    auto localSetExpr = BinaryenIf(
+        getModule(),
+        BinaryenBinary(
+            getModule(), BinaryenEqInt32(),
+            BinaryenCall(getModule(), "check", args, 2, BinaryenTypeInt32()),
+            BinaryenConst(getModule(), BinaryenLiteralInt32(0))),
+        BinaryenUnreachable(getModule()), curr);
+
+    replaceCurrent(localSetExpr);
   }
-}
+};
 
 BinaryenExpressionRef makeInt32(BinaryenModuleRef module, int x) {
   return BinaryenConst(module, BinaryenLiteralInt32(x));
@@ -43,45 +59,42 @@ TEST(BinaryenTest, TestReadBinaryFromFile) {
   BinaryenType params = BinaryenTypeCreate(ii, 2);
   BinaryenType results = BinaryenTypeInt32();
   BinaryenModuleRef module = BinaryenModuleRead(buffer, fsize);
-
-  BinaryenExpressionRef x = BinaryenLocalGet(module, 0, BinaryenTypeInt32()),
-                        y = BinaryenLocalGet(module, 1, BinaryenTypeInt32());
-  BinaryenExpressionRef add = BinaryenBinary(module, BinaryenAddInt32(), x, y);
-  BinaryenExpressionRef callOperands2[] = {makeInt32(module, 13),
-                                           makeInt32(module, 3)};
-  BinaryenFunctionRef adder =
-      BinaryenAddFunction(module, "adder", params, results, NULL, 0, add);
-
-  for (auto &funcref : module->functions) {
-    BinaryenFunctionRef fun = static_cast<BinaryenFunctionRef>(funcref.get());
-    std::string newBlockName = fun->name.toString() + "_newblock";
-    std::vector<BinaryenExpressionRef> refs;
-
-    for (BinaryenExpressionRef expression : wasm::ChildIterator(fun->body)) {
-      if (expression->is<wasm::Store>()) {
-        wasm::Store *foundStore = static_cast<wasm::Store *>(expression);
-        std::cout << static_cast<uint32_t>(foundStore->bytes) << std::endl;
-        BinaryenExpressionRef args[] = {
-            foundStore->ptr,
-            BinaryenConst(module, BinaryenLiteralInt32(static_cast<uint32_t>(
-                                      foundStore->bytes)))};
-        auto localSetExpr = BinaryenIf(
-            module,
-            BinaryenBinary(
-                module, BinaryenEqInt32(),
-                BinaryenCall(module, "check", args, 2, BinaryenTypeInt32()),
-                BinaryenConst(module,
-                              BinaryenLiteralInt32(0))
-                ),
-            BinaryenUnreachable(module), NULL);
-        refs.push_back(localSetExpr);
-      }
-      refs.push_back(expression);
-    }
-    auto block = BinaryenBlock(module, newBlockName.c_str(), refs.data(),
-                               refs.size(), BinaryenTypeAuto());
-    fun->body = block;
-  }
+  struct CDCInstrumenter instrumentator;
+  // instrumentator.visitModule(module);
+  instrumentator.walkModule(module);
+  // int blockIndex = 0;
+  // for (auto &funcref : module->functions) {
+  //   instrumentator.setFunction(funcref.get());
+  //   visit(funcref->body, module, &blockIndex, instrumentator);
+  //   // for (BinaryenExpressionRef expression :
+  //   wasm::ChildIterator(fun->body)) {
+  //   //   if (expression->is<wasm::Store>()) {
+  //   //     wasm::Store *foundStore = static_cast<wasm::Store *>(expression);
+  //   //     std::cout << static_cast<uint32_t>(foundStore->bytes) <<
+  //   std::endl;
+  //   //     BinaryenExpressionRef args[] = {
+  //   //         foundStore->ptr,
+  //   //         BinaryenConst(module,
+  //   BinaryenLiteralInt32(static_cast<uint32_t>(
+  //   //                                   foundStore->bytes)))};
+  //   //     auto localSetExpr = BinaryenIf(
+  //   //         module,
+  //   //         BinaryenBinary(
+  //   //             module, BinaryenEqInt32(),
+  //   //             BinaryenCall(module, "check", args, 2,
+  //   BinaryenTypeInt32()),
+  //   //             BinaryenConst(module,
+  //   //                           BinaryenLiteralInt32(0))
+  //   //             ),
+  //   //         BinaryenUnreachable(module), NULL);
+  //   //     refs.push_back(localSetExpr);
+  //   //   }
+  //   //   refs.push_back(expression);
+  //   // }
+  //   // auto block = BinaryenBlock(module, newBlockName.c_str(), refs.data(),
+  //   //                            refs.size(), BinaryenTypeAuto());
+  //   // fun->body = block;
+  // }
 
   // BinaryenFunctionRef callAddBody = BinaryenCall(module, "adder",
   // {makeInt32(module, 11), makeInt32(module, 12)}, 2, BinaryenTypeNone());
