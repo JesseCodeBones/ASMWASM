@@ -32,13 +32,13 @@ struct CDCAddrSanatizerInstrumenter
 
   void visitStore(wasm::Store *curr) {
     if ((!getFunction()->name.startsWith(wasm::IString(skipFunctionPrefix))) &&
-        (!getFunction()->name.hasSubstring(wasm::IString("~lib/rt/")))) {
+        (!getFunction()->name.hasSubstring(wasm::IString("~lib/")))) {
       replaceCurrent(genReplacement(curr, curr->ptr, curr->bytes));
     }
   }
   void visitLoad(wasm::Load *curr) {
     if ((!getFunction()->name.startsWith(wasm::IString(skipFunctionPrefix))) &&
-        (!getFunction()->name.hasSubstring(wasm::IString("~lib/rt/")))) {
+        (!getFunction()->name.hasSubstring(wasm::IString("~lib/")))) {
       replaceCurrent(genReplacement(curr, curr->ptr, curr->bytes));
     }
   }
