@@ -3,6 +3,7 @@
 #include "support/istring.h"
 #include "wasm-binary.h"
 #include "wasm-builder.h"
+#include "wasm.h"
 #include <binaryen-c.h>
 #include <cstdint>
 #include <cstdio>
@@ -10,6 +11,7 @@
 #include <exception>
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 
 struct CDCAddrSanatizerInstrumenter
     : public wasm::WalkerPass<wasm::PostWalker<CDCAddrSanatizerInstrumenter>> {
@@ -17,29 +19,56 @@ struct CDCAddrSanatizerInstrumenter
   BinaryenExpressionRef genReplacement(BinaryenExpressionRef curr,
                                        BinaryenExpressionRef ptr,
                                        uint8_t size) {
+    BinaryenExpressionRef ptrExp = BinaryenLocalSet(getModule(), 0, ptr);
     BinaryenExpressionRef args[] = {
-        ptr, BinaryenConst(getModule(),
-                           BinaryenLiteralInt32(static_cast<uint32_t>(size)))};
-    
-    
-    return BinaryenIf(
-        getModule(),
-        BinaryenCall(getModule(), sanitizerName, args, 2,
-                                    BinaryenTypeInt32()),
-        BinaryenUnreachable(getModule()), curr);
-
+        BinaryenLocalGet(getModule(), 0, BinaryenTypeAuto()),
+        BinaryenConst(getModule(),
+                      BinaryenLiteralInt32(static_cast<uint32_t>(size)))};
+    BinaryenExpressionRef list[] = {
+        BinaryenIf(getModule(),
+                   BinaryenCall(getModule(), sanitizerName, args, 2,
+                                BinaryenTypeInt32()),
+                   BinaryenUnreachable(getModule()), NULL),
+        curr};
+    return BinaryenBlock(getModule(), NULL, list, 2, BinaryenTypeAuto());
   }
 
   void visitStore(wasm::Store *curr) {
     if ((!getFunction()->name.startsWith(wasm::IString(skipFunctionPrefix))) &&
-        (!getFunction()->name.hasSubstring(wasm::IString("~lib/")))) {
-      replaceCurrent(genReplacement(curr, curr->ptr, curr->bytes));
+        (!getFunction()->name.hasSubstring(wasm::IString("~lib/rt/")))) {
+      BinaryenExpressionRef ptrExp =
+          BinaryenLocalSet(getModule(), 0, curr->ptr);
+      BinaryenExpressionRef args[] = {
+          BinaryenLocalGet(getModule(), 0, BinaryenTypeAuto()),
+          BinaryenConst(getModule(), BinaryenLiteralInt32(
+                                         static_cast<uint32_t>(curr->bytes)))};
+      BinaryenExpressionRef list[] = {
+          BinaryenIf(getModule(),
+                     BinaryenCall(getModule(), sanitizerName, args, 2,
+                                  BinaryenTypeInt32()),
+                     BinaryenUnreachable(getModule()), NULL),
+          curr};
+      replaceCurrent(
+          BinaryenBlock(getModule(), NULL, list, 2, BinaryenTypeAuto()));
     }
   }
   void visitLoad(wasm::Load *curr) {
     if ((!getFunction()->name.startsWith(wasm::IString(skipFunctionPrefix))) &&
-        (!getFunction()->name.hasSubstring(wasm::IString("~lib/")))) {
-      replaceCurrent(genReplacement(curr, curr->ptr, curr->bytes));
+        (!getFunction()->name.hasSubstring(wasm::IString("~lib/rt/")))) {
+      BinaryenExpressionRef ptrExp =
+          BinaryenLocalSet(getModule(), 0, curr->ptr);
+      BinaryenExpressionRef args[] = {
+          BinaryenLocalGet(getModule(), 0, BinaryenTypeAuto()),
+          BinaryenConst(getModule(), BinaryenLiteralInt32(
+                                         static_cast<uint32_t>(curr->bytes)))};
+      BinaryenExpressionRef list[] = {
+          BinaryenIf(getModule(),
+                     BinaryenCall(getModule(), sanitizerName, args, 2,
+                                  BinaryenTypeInt32()),
+                     BinaryenUnreachable(getModule()), NULL),
+          curr};
+      replaceCurrent(
+          BinaryenBlock(getModule(), NULL, list, 2, BinaryenTypeAuto()));
     }
   }
 
