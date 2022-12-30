@@ -30,6 +30,7 @@ struct CDCAddrSanatizerInstrumenter
           BinaryenLocalGet(getModule(), index, BinaryenTypeAuto()),
           BinaryenConst(getModule(), BinaryenLiteralInt32(
                                          static_cast<uint32_t>(curr->bytes)))};
+
       BinaryenExpressionRef list[] = {
           BinaryenLocalSet(getModule(), index, ptrGetter),
           BinaryenIf(getModule(),
@@ -44,20 +45,19 @@ struct CDCAddrSanatizerInstrumenter
   void visitLoad(wasm::Load *curr) {
     if ((!getFunction()->name.startsWith(wasm::IString(skipFunctionPrefix))) &&
         (!getFunction()->name.hasSubstring(wasm::IString("~lib/rt/")))) {
-      
+
       auto index = getFunction()->getNumLocals();
       getFunction()->vars.push_back(curr->ptr->type);
 
       auto ptrGetter = curr->ptr;
       curr->ptr = BinaryenLocalGet(getModule(), index, BinaryenTypeAuto());
 
-
       BinaryenExpressionRef args[] = {
           BinaryenLocalGet(getModule(), index, BinaryenTypeAuto()),
           BinaryenConst(getModule(), BinaryenLiteralInt32(
                                          static_cast<uint32_t>(curr->bytes)))};
       BinaryenExpressionRef list[] = {
-        BinaryenLocalSet(getModule(), index, ptrGetter),
+          BinaryenLocalSet(getModule(), index, ptrGetter),
           BinaryenIf(getModule(),
                      BinaryenCall(getModule(), sanitizerName, args, 2,
                                   BinaryenTypeInt32()),
