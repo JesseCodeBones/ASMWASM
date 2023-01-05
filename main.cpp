@@ -1,9 +1,8 @@
+#include "src/CDCInstru.hpp"
+#include "src/CDCInstruDelegator.hpp"
 #include <binaryen-c.h>
 #include <cstring>
 #include <iostream>
-#include "src/CDCInstru.hpp"
-#include "src/CDCInstruDelegator.hpp"
-
 
 int main(int argc, char **argv) {
   struct InstrumentationConfig instruConfig;
@@ -18,7 +17,7 @@ int main(int argc, char **argv) {
     std::cout << "-s    sanitizer function name\n";
     std::cout << "-----------------------------\n";
     std::cout << "example: asm-wasm -f input.wasm -r \"../node_module/asc\" -o "
-                 "out.wasm -s \"$node_modules/asc-linear-rt/lm/chkMemAvai\"\n" ;
+                 "out.wasm -s \"$node_modules/asc-linear-rt/lm/chkMemAvai\"\n";
     return 0;
   }
 

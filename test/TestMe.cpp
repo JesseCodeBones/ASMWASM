@@ -60,52 +60,7 @@ TEST(BinaryenTest, TestReadBinaryFromFile) {
   BinaryenType results = BinaryenTypeInt32();
   BinaryenModuleRef module = BinaryenModuleRead(buffer, fsize);
   struct CDCInstrumenter instrumentator;
-  // instrumentator.visitModule(module);
   instrumentator.walkModule(module);
-  // int blockIndex = 0;
-  // for (auto &funcref : module->functions) {
-  //   instrumentator.setFunction(funcref.get());
-  //   visit(funcref->body, module, &blockIndex, instrumentator);
-  //   // for (BinaryenExpressionRef expression :
-  //   wasm::ChildIterator(fun->body)) {
-  //   //   if (expression->is<wasm::Store>()) {
-  //   //     wasm::Store *foundStore = static_cast<wasm::Store *>(expression);
-  //   //     std::cout << static_cast<uint32_t>(foundStore->bytes) <<
-  //   std::endl;
-  //   //     BinaryenExpressionRef args[] = {
-  //   //         foundStore->ptr,
-  //   //         BinaryenConst(module,
-  //   BinaryenLiteralInt32(static_cast<uint32_t>(
-  //   //                                   foundStore->bytes)))};
-  //   //     auto localSetExpr = BinaryenIf(
-  //   //         module,
-  //   //         BinaryenBinary(
-  //   //             module, BinaryenEqInt32(),
-  //   //             BinaryenCall(module, "check", args, 2,
-  //   BinaryenTypeInt32()),
-  //   //             BinaryenConst(module,
-  //   //                           BinaryenLiteralInt32(0))
-  //   //             ),
-  //   //         BinaryenUnreachable(module), NULL);
-  //   //     refs.push_back(localSetExpr);
-  //   //   }
-  //   //   refs.push_back(expression);
-  //   // }
-  //   // auto block = BinaryenBlock(module, newBlockName.c_str(), refs.data(),
-  //   //                            refs.size(), BinaryenTypeAuto());
-  //   // fun->body = block;
-  // }
-
-  // BinaryenFunctionRef callAddBody = BinaryenCall(module, "adder",
-  // {makeInt32(module, 11), makeInt32(module, 12)}, 2, BinaryenTypeNone());
-  // BinaryenAddFunction(module, "call_add", voidType, voidType, NULL, 0,
-  // callAddBody); for (auto &func : module->functions) {
-  //   std::cout << "function name = " << func->name << std::endl;
-  //   for (auto expression : wasm::ChildIterator(func->body)) {
-  //     expression->dump();
-  //     // visit(expression);
-  //   }
-  // }
   EXPECT_EQ(7 * 6, 42);
   BinaryenModulePrint(module);
   fclose(file);
