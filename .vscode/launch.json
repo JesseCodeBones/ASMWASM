@@ -11,13 +11,15 @@
       "program": "/home/jesse/workspace/ASMWASM/build/asm-wasm",
       "args": [
         "-f",
-        "/home/jesse/workspace/ASMWASM/build/test/wasm/main.wasm",
+        "/home/jesse/workspace/as_demo/build/debug.wasm",
         "-r",
         "'node_modules/asc-linear-rt/lm'",
         "-o",
         "out.wasm",
         "-s",
-        "'node_modules/asc-linear-rt/lm/chkMemAvai'"
+        "'node_modules/asc-linear-rt/lm/chkMemAvai'",
+        "-m",
+        "/home/jesse/workspace/as_demo/build/debug.wasm.map"
       ],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",

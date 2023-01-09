@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv) {
   struct InstrumentationConfig instruConfig;
-  if (argc != 9) {
+  if (argc != 11) {
     // print help documentation
     std::cout << "asm-wasm is a tool that instrument wasm binary with Adress "
                  "sanatizer function:\n";
@@ -15,6 +15,7 @@ int main(int argc, char **argv) {
     std::cout << "-r    runtime file prefix\n";
     std::cout << "-o    output file\n";
     std::cout << "-s    sanitizer function name\n";
+    std::cout << "-m    source map file\n";
     std::cout << "-----------------------------\n";
     std::cout << "example: asm-wasm -f input.wasm -r \"../node_module/asc\" -o "
                  "out.wasm -s \"$node_modules/asc-linear-rt/lm/chkMemAvai\"\n";
@@ -33,6 +34,9 @@ int main(int argc, char **argv) {
     }
     if (strcmp(argv[i], "-s") == 0) {
       instruConfig.sanitizerName = argv[i + 1];
+    }
+    if (strcmp(argv[i], "-m") == 0) {
+      instruConfig.sourceMap = argv[i + 1];
     }
   }
   std::cout << "Got your arguments: " << instruConfig << std::endl;

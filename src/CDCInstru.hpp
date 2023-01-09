@@ -5,11 +5,13 @@ struct InstrumentationConfig {
   char *runtimeName;
   char *targetName;
   char *sanitizerName;
+  char *sourceMap;
   friend std::ostream &operator<<(std::ostream &out,
                                   const InstrumentationConfig &instance) {
     out << "filename: " << instance.fileName
         << ", runtimeName: " << instance.runtimeName
         << ", targetName: " << instance.targetName
+        << ", sourceMap: " << instance.sourceMap
         << ", sanitizerName:" << instance.sanitizerName << std::endl;
     return out;
   }
